@@ -76,6 +76,15 @@ end
 env        = node['chef_client']['cron']['environment_variables']
 log_file   = node['chef_client']['cron']['log_file']
 
+
+# cron command to be used in the cron or cron_d resources
+# add a flock so that these crons don't stack if the run
+# has some issue.
+cmd = "(flock -xn #{Chef::Config[:lockfile]} "
+cmd << "/bin/sleep #{sleep_time}; " if sleep_time
+cmd << "#{env} #{client_bin} > #{log_file} 2>&1"
+cmd << ")>#{Chef::Config[:lockfile]}"
+
 # If "use_cron_d" is set to true, delete the cron entry that uses the cron
 # resource built in to Chef and instead use the cron_d LWRP.
 if node['chef_client']['cron']['use_cron_d']
@@ -88,9 +97,6 @@ if node['chef_client']['cron']['use_cron_d']
     hour    node['chef_client']['cron']['hour']
     path    node['chef_client']['cron']['path'] if node['chef_client']['cron']['path']
     user    'root'
-    cmd = ''
-    cmd << "/bin/sleep #{sleep_time}; " if sleep_time
-    cmd << "#{env} #{client_bin} > #{log_file} 2>&1"
     command cmd
   end
 else
@@ -103,9 +109,6 @@ else
     hour    node['chef_client']['cron']['hour']
     path    node['chef_client']['cron']['path'] if node['chef_client']['cron']['path']
     user    'root'
-    cmd = ''
-    cmd << "/bin/sleep #{sleep_time}; " if sleep_time
-    cmd << "#{env} #{client_bin} > #{log_file} 2>&1"
     command cmd
   end
 end

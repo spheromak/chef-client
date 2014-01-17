@@ -80,10 +80,12 @@ log_file   = node['chef_client']['cron']['log_file']
 # cron command to be used in the cron or cron_d resources
 # add a flock so that these crons don't stack if the run
 # has some issue.
-cmd = "(flock -xn #{Chef::Config[:lockfile]} "
-cmd << "/bin/sleep #{sleep_time}; " if sleep_time
+lockfile = Chef::Config[:lockfile] || 'chef-client-running.pid'
+lockpath = Chef::Config[:file_cache_path] + "/" + lockfile
+
+cmd = "flock -xn #{lockpath} "
+cmd << "/bin/sleep #{sleep_time} && " if sleep_time
 cmd << "#{env} #{client_bin} > #{log_file} 2>&1"
-cmd << ")>#{Chef::Config[:lockfile]}"
 
 # If "use_cron_d" is set to true, delete the cron entry that uses the cron
 # resource built in to Chef and instead use the cron_d LWRP.
